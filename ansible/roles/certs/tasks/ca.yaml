@@ -1,0 +1,53 @@
+- name: Create a folder to store the Certificate Authority (CA)
+  ansible.builtin.file:
+    path: '{{ certs_ca_certificate_path }}'
+    state: directory
+    mode: '0700'
+
+- name: Create CA root key
+  community.crypto.openssl_privatekey:
+    path: '{{ certs_ca_certificate_root_key_file }}'
+    passphrase: '{{ certs_ca_root_key_passkey }}'
+    cipher: auto
+    size: 4096
+    type: RSA
+
+- name: Check CSR does not exists
+  ansible.builtin.stat:
+    path: '{{ certs_ca_certificate_root_csr_file }}'
+  register: csr_stat
+    
+- name: Create certificate signing request (CSR) for CA certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: '{{ certs_ca_certificate_root_key_file }}'
+    privatekey_passphrase: '{{ certs_ca_root_key_passkey }}'
+    common_name: '{{ certs_ca_certificate_root_cname }}'
+    use_common_name_for_san: false  
+    basic_constraints:
+      - 'CA:TRUE'
+    basic_constraints_critical: true
+    key_usage:
+      - keyCertSign
+    key_usage_critical: true
+  register: ca_root_csr
+  notify: Store ca csr 
+  when: not csr_stat.stat.exists
+
+- name: Create self-signed CA certificate from CSR
+  community.crypto.x509_certificate:
+    path: '{{ certs_ca_certificate_root_crt_file }}'
+    csr_content: '{{ ca_root_csr.csr }}'
+    ownca_not_after: '{{ certs_ca_root_ownca_not_after }}'
+    privatekey_path:  '{{ certs_ca_certificate_root_key_file }}'
+    privatekey_passphrase: '{{ certs_ca_root_key_passkey }}'
+    provider: selfsigned
+  when: ca_root_csr is changed
+
+- name: Set immutable flag to the CA files
+  ansible.builtin.file:
+    path: ' {{ item }}'
+    attributes: '+i'
+  loop:
+    - '{{ certs_ca_certificate_root_crt_file }}'
+    - '{{ certs_ca_certificate_root_key_file }}'
+  when: certs_ca_certificate_set_immutable

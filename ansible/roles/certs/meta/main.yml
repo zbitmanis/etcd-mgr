@@ -1,0 +1,13 @@
+galaxy_info:
+  author: andris zbitkovskis
+  description: role for basic node preparation for feature installation.
+
+  license: MITS
+
+  min_ansible_version: 2.9
+
+  galaxy_tags: [ca,openssl]
+  role_name: certs
+  galaxy_name: zbitmanis
+
+dependencies: []

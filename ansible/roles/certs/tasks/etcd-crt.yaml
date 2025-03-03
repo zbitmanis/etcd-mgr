@@ -1,0 +1,51 @@
+---
+- name: Create a directory to store the certificates 
+  ansible.builtin.file:
+    path: '{{ certs_etcd_certificate_path }}'
+    state: directory
+    mode: '0755'
+
+- name: Create private key for new certificate on {{ inventory_hostname }}
+  community.crypto.openssl_privatekey:
+    path: '{{ certs_etcd_key_file }}'
+    owner: '{{ certs_etcd_owner }}' 
+    group: '{{ certs_etcd_group }}' 
+
+- name: Check CSR does not exists
+  ansible.builtin.stat:
+    path: '{{ certs_etcd_csr_file }}'
+  register: csr_stat
+
+- name: Create certificate signing request (CSR) for new certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: '{{ certs_etcd_key_file }}'
+    common_name: '{{ certs_etcd_common_name }}'
+    subject_alt_name: '{{ certs_etcd_sans }}'
+    locality_name: '{{ certs_etcd_locality_name }}'
+    organization_name:  ' {{ certs_etcd_organization_name }}'
+    organizational_unit_name: ' {{ certs_etcd_organizational_unit_name }}'
+  register: csr
+  notify: Store etcd csr
+  when: not csr_stat.stat.exists or certs_etcd_csr_forced
+
+
+- name: Sign certificate with our CA
+  community.crypto.x509_certificate_pipe:
+    csr_content: "{{ csr.csr }}"
+    provider: ownca
+    ownca_path: '{{ certs_ca_certificate_root_crt_file }}'  
+    ownca_privatekey_path: '{{ certs_ca_certificate_root_key_file }}'
+    ownca_privatekey_passphrase: "{{ certs_ca_root_key_passkey }}"
+    ownca_not_after: '{{ certs_etcd_ownca_not_after }}'
+    ownca_not_before: "-1d"  # valid since yesterday
+  delegate_to: '{{ certs_etcd_ca_server }}'
+  register: certificate
+  when: csr is changed  
+
+- name: Write certificate file on {{ inventory_hostname }}
+  copy:
+    dest: '{{ certs_etcd_crt_file }}' 
+    content: "{{ certificate.certificate }}"
+    owner: '{{ certs_etcd_owner }}' 
+    group: '{{ certs_etcd_group }}' 
+  when: certificate is changed  

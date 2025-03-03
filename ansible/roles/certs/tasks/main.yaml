@@ -1,0 +1,42 @@
+---
+- name: Ensure destination path exist
+  ansible.builtin.file:
+    path: "{{ certs_output_path }}"
+    state: directory
+
+- name: Deploy Certificate of Authority
+  include_tasks: ca.yaml
+  when: "'ca' in group_names"
+
+- name: Copy CA root public certificate
+  ansible.builtin.fetch:
+    src: '{{ certs_ca_certificate_root_crt_file }}'
+    dest: '{{ certs_output_bundle_file }}'
+    flat: true
+  run_once: true
+  when: "'ca' in group_names"
+  register:  bundle_result 
+
+#- name: Slurp the remote file
+#  ansible.builtin.slurp:
+#    src: '{{ certs_ca_bundle_path }}'
+#    register: bundle_contents  
+#  when: "'ca' in group_names"
+
+- name: Read CA bundle content 
+  ansible.builtin.set_fact:
+    ca_public_root: '{{ lookup("file", certs_output_bundle_file ) }}'
+  when: bundle_result is changed 
+    
+- name: Deploy etcd certificates
+  include_tasks: etcd-crt.yaml
+  when: "'etcd' in group_names"
+
+- name: Deploy etcd certificates
+  include_tasks: client-crt.yaml
+  when: "'client' in group_names"
+
+- name: Write CA bundle on {{ inventory_hostname }} to {{ certs_ca_bundle_path }} 
+  copy:
+    dest: '{{ certs_ca_bundle_path }}' 
+    src: '{{ certs_output_bundle_file }}' 

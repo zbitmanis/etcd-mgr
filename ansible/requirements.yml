@@ -1,0 +1,3 @@
+- src: https://github.com/zbitmanis/role_node_info.git 
+  version: v1.0.0
+  name: node_info
