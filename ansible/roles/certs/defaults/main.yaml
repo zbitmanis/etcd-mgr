@@ -4,7 +4,8 @@ certs_etcd_certificate_path: /etc/etcd/tls
 certs_ca_bundle_path: '{{ certs_etcd_certificate_path }}/etcd-ca.pem'
 certs_etcd_env: '{{ etcd_mgr_env }}'
 certs_output_path:  '{{ playbook_dir }}/output/{{ certs_etcd_env }}'
-certs_output_bundle_file: '{{ certs_output_path }}/etcd-ca-bundle.pem'
+certs_output_bundle_file_name: etcd-ca-bundle.pem
+certs_output_bundle_file: '{{ certs_output_path }}/{{ certs_output_bundle_file_name }}'
 certs_ca_certificate_root_cname: 'etcd'
 certs_ca_certificate_root_key_file: '{{ certs_ca_certificate_path }}/ca-root.key'
 certs_ca_certificate_root_crt_file: '{{ certs_ca_certificate_path }}/ca-root.pem'
@@ -29,7 +30,10 @@ certs_etcd_cname: etcd-node-a
 certs_etcd_ca_server: seed
 certs_etcd_group: etcd
 certs_etcd_owner: etcd
+certs_etcd_client_group: ubuntu
+certs_etcd_client_owner: ubuntu
 certs_etcd_client_ca_server: '{{ certs_etcd_ca_server }}'
+certs_etcd_client_domain: eu-central-1.compute.internal
 certs_etcd_sans:
   - DNS:localhost
   - DNS:etcd-node-a

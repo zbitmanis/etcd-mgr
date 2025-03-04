@@ -16,6 +16,8 @@
   run_once: true
   when: "'ca' in group_names"
   register:  bundle_result 
+  tags:
+    - bundle
 
 #- name: Slurp the remote file
 #  ansible.builtin.slurp:
@@ -36,7 +38,26 @@
   include_tasks: client-crt.yaml
   when: "'client' in group_names"
 
+- name: Deploy mon certificates
+  include_tasks: client-crt.yaml
+  when: "'mon' in group_names"
+
 - name: Write CA bundle on {{ inventory_hostname }} to {{ certs_ca_bundle_path }} 
   copy:
     dest: '{{ certs_ca_bundle_path }}' 
     src: '{{ certs_output_bundle_file }}' 
+  tags:
+    - bundle
+
+- name: Write CA bundle on {{ inventory_hostname }} to {{ item.path }} 
+  copy:
+    dest: '{{ item.path }}/{{ certs_output_bundle_file_name }}' 
+    src: '{{ certs_output_bundle_file }}'
+    owner: '{{ item.owner | default(omit) }}' 
+    group: '{{ item.group | default(omit) }}' 
+  when: '"path" in item'
+  loop:
+    '{{ certs_etcd_client_certs }}'
+  tags:
+    - bundle
+
