@@ -1,0 +1,40 @@
+# container-etcd.service
+
+[Unit]
+Description=etcd key-value store
+Documentation={{ etcd_protocol }}s://github.com/etcd-io/etcd
+Wants=network-online.target
+After=network-online.target
+RequiresMountsFor=%t/containers
+
+[Service]
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Environment=ETCD_DATA_DIR={{ etcd_data_dir }}
+Environment=ETCD_TLS_DIR={{ etcd_tls_dir }}
+Environment=ETCD_NODE_IP={{ etcd_node_ip }}
+Environment=ETCD_NODE_NAME={{ etcd_node_name }} 
+Environment=ETCD_RELEASE={{ etcd_release }}
+Environment=ETCD_UID={{ etcd_uid }}
+Environment=CLUSTER_STATE=new
+Environment=ETCD_TOKEN={{ etcd_token }}
+Environment=CLUSTER={{ etcd_cluster }}
+Environment=ETCD_UID={{ etcd_uid }}
+Environment=ETCD_CA_FILE={{ etcd_ca_file }}
+Environment=ETCD_CERT_FILE={{ etcd_cert_file }}
+Environment=ETCD_KEY_FILE={{ etcd_key_file }}
+Environment=ETCD_PEER_TRUSTED_CA_FILE={{ etcd_peer_trusted_ca_file }}
+Environment=ETCD_PEER_CERT_FILE={{ etcd_peer_cert_file }}
+Environment=ETCD_PEER_KEY_FILE={{ etcd_peer_key_file }}
+
+Restart=on-failure
+TimeoutStopSec=70
+ExecStartPre=/bin/rm -f %t/%n.ctr-id
+ExecStart=/usr/bin/podman run --cidfile=%t/%n.ctr-id --cgroups=no-conmon --rm --sdnotify=conmon --replace -p${ETCD_NODE_IP}:2379:2379 -p${ETCD_NODE_IP}:2380:2380 --hostname ${ETCD_NODE_NAME} --user ${ETCD_UID} -d -v ${ETCD_DATA_DIR}:${ETCD_DATA_DIR} -v /var/etcd:/var/etcd -v ${ETCD_TLS_DIR}:${ETCD_TLS_DIR} --name etcd quay.io/coreos/etcd:${ETCD_RELEASE} /usr/local/bin/etcd --data-dir=${ETCD_DATA_DIR} --name ${ETCD_NODE_NAME} --initial-advertise-peer-urls {{ etcd_protocol }}://${ETCD_NODE_IP}:2380 --listen-peer-urls {{ etcd_protocol }}://0.0.0.0:2380 --advertise-client-urls {{ etcd_protocol }}://${ETCD_NODE_IP}:2379 --listen-client-urls {{ etcd_protocol }}://0.0.0.0:2379 --initial-cluster ${CLUSTER} --initial-cluster-token ${ETCD_TOKEN} {% if enable_tls %}  --key-file ${ETCD_KEY_FILE} --cert-file ${ETCD_CERT_FILE} --peer-cert-file ${ETCD_PEER_CERT_FILE} --peer-key-file ${ETCD_PEER_KEY_FILE} --peer-trusted-ca-file ${ETCD_PEER_TRUSTED_CA_FILE} {% endif %} {% if etcd_client_cert_auth %}  --client-cert-auth  --trusted-ca-file ${ETCD_CA_FILE} {% endif %} {% if etcd_peer_client_cert_auth %} --peer-client-cert-auth {% endif %} 
+
+ExecStop=/usr/bin/podman stop --ignore --cidfile=%t/%n.ctr-id
+ExecStopPost=/usr/bin/podman rm -f --ignore --cidfile=%t/%n.ctr-id
+Type=notify
+NotifyAccess=all
+
+[Install]
+WantedBy=default.target

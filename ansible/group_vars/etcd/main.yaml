@@ -1,1 +1,10 @@
-etcd_cluster_token: '{{ vault_etcd_token}}'
+etcd_cluster_token: '{{ vault_etcd_token }}'
+certs_etcd_sans:
+  - DNS:localhost
+  - DNS:etcd-node-a
+  - DNS:etcd-node-b
+  - DNS:etcd-node-c
+  - IP:127.0.0.1
+  - IP:10.0.2.237
+  - IP:10.0.2.188
+  - IP:10.0.2.160 

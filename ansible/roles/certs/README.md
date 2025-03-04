@@ -110,9 +110,9 @@ Include this role in your playbook and customize the variables as needed:
 
 ```yaml
 - name: Deploy etcd certificates
-  hosts: etcd_nodes
+  hosts: etcd,ca,client
   roles:
-    - role: ca_and_certificates_management
+    - role: certs 
       vars:
         certs_etcd_env: 'production'
         certs_etcd_cname: 'etcd-node-a'
