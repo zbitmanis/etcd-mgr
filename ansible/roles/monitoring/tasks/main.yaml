@@ -1,8 +1,9 @@
 ---
----
 - name: Gather the ip address of etcd interface
   ansible.builtin.set_fact:
     monitoring_node_ip:  '{{ ansible_facts[monitoring_node_iface].ipv4.address }}'
+  tags:
+    - grafana
 
 - name: Deploy prometheus systemd unit file 
   ansible.builtin.template:
