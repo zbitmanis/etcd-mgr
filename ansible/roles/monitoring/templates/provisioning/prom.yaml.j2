@@ -5,7 +5,7 @@ datasources:
   type: prometheus
   access: direct
   orgId: 1
-  url: http://{{ ansible_default_ipv4.address }}:9090
+  url: http://{{ monitoring_node_ip }}:9090
   isDefault: true
   version: 1
   editable: false
