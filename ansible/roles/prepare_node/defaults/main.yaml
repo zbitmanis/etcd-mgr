@@ -1,0 +1,47 @@
+---
+prepare_node_debian_packages:
+  - name: 'bash-completion'
+  - name: 'ca-certificates'
+  - name: 'curl'
+  - name: 'chrony'
+  - name: 'nvme-cli'
+  - name: 'tmux'
+  - name: 'vim'
+  - name: 'podman'
+prepare_node_ntp_server: 'ch.pool.ntp.org'
+prepare_node_config_chrony: true
+prepare_node_system_groups:
+    - name: etcd
+      gid: 1001
+prepare_node_system_users:
+    - name: etcd
+      group: etcd
+      uid: 1001
+      shell: /bin/nologin
+      home: /var/etcd
+      create_home: false
+prepare_node_system_folders:
+        - path: /var/etcd
+          mode: '0750'
+          user: etcd
+          group: etcd
+        - path: /etc/etcd/tls
+          mode: '0750'
+          user: etcd
+          group: etcd
+        - path: /var/lib/etcd
+          mode: '0700'
+          user: etcd
+          group: etcd
+        - path: /var/log/etcd
+          mode: '0750'
+          user: etcd
+          group: etcd
+prepare_node_hosts:
+  - name: etcd-node-a
+    ipv4: 10.0.2.160
+  - name: etcd-node-b
+    ipv4: 10.0.2.237
+  - name:  etcd-node-c
+    ipv4: 10.0.2.188
+
