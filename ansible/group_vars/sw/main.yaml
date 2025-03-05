@@ -1,0 +1,41 @@
+---
+certs_etcd_ca_server: ca-a
+node_info_env: '{{ etcd_mgr_env }}'
+etcd_mgr_ext_domain_name: fogc.space
+etcd_mgr_int_domain_name: int.eu-central-1.compute.internal
+prepare_node_hosts:
+  - name: etcd-node-a
+    ipv4: 10.0.2.91
+    domain: '{{ etcd_mgr_int_domain_name }}'
+  - name: etcd-node-b
+    ipv4: 10.0.2.91 
+    domain: '{{ etcd_mgr_int_domain_name }}'
+  - name:  etcd-node-c
+    ipv4: 10.0.2.128
+    domain: '{{ etcd_mgr_int_domain_name }}'
+monitoring_etcd_scrape_targets:
+  - '10.0.2.91:2379'
+  - '10.0.2.251:2379'
+  - '10.0.2.128:2379'
+certs_etcd_sans:
+  - DNS:localhost
+  - DNS:etcd-node-a
+  - DNS:etcd-node-b
+  - DNS:etcd-node-c
+  - IP:127.0.0.1
+  - IP:10.0.2.91
+  - IP:10.0.2.251
+  - IP:10.0.2.128
+  - DNS:etcd-node-a.int.eu-central-1.compute.internal
+  - DNS:etcd-node-b.int.eu-central-1.compute.internal
+  - DNS:etcd-node-c.int.eu-central-1.compute.internal
+etcd_nodes:
+  - name: etcd-node-a
+    ipv4: 10.0.2.91
+  - name: etcd-node-b
+    ipv4: 10.0.2.251
+  - name: etcd-node-c
+    ipv4: 10.0.2.128
+etcd_node_iface: eth1
+monitoring_node_iface: eth1
+etcd_cluster_token: '{{ vault_etcd_token }}'
