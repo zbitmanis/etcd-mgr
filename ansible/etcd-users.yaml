@@ -1,0 +1,10 @@
+---
+- name: 'Create etcd users, roles and grant permisions'
+  hosts:  etcd-node-b
+  become: true
+  gather_facts: true
+  roles:
+   - etcd-users
+  tags:
+    - 'etcd-users'
+

@@ -1,0 +1,146 @@
+---
+- name: Gather the ip address of etcd interface
+  ansible.builtin.set_fact:
+    etcd_user_endpoint_ip:  '{{ ansible_facts[etcd_users_node_iface].ipv4.address }}'
+
+- name: Gather etcd users 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - user 
+      - list
+      - --user=root 
+      - --password={{ etcd_user_root_password }}
+  register: user_list
+
+- name: Gather etcd roles 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - role 
+      - list
+      - --user=root 
+      - --password={{ etcd_user_root_password }}
+  register: role_list
+
+- name: Add root user 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - user 
+      - add 
+      - root 
+      - --interactive=false
+      - --new-user-password 
+      - '{{ etcd_user_root_password }}'
+  when: '"root" not in user_list.stdout' 
+
+- name: Create etcd roles 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - role 
+      - add
+      - '{{ item.role }}'
+  when: 'item.role not in role_list.stdout'
+  loop: 
+    '{{ etcd_roles_list}}' 
+
+- name: Grant read permission to etcd roles 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - role 
+      - grant-permission
+      - '{{ item.role }}'
+      - --prefix=true
+      - read
+      - '/{{ item.prefix }}/'
+  loop: 
+    '{{ etcd_roles_list}}' 
+
+- name: Grant write permission to etcd roles 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - role 
+      - grant-permission
+      - '{{ item.role }}'
+      - --prefix=true
+      - write
+      - '/{{ item.prefix }}/'
+  loop: 
+    '{{ etcd_roles_list}}' 
+
+
+- name: Create etcd users 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - user 
+      - add 
+      - '{{item.user}}' 
+      - --interactive=false
+      - --new-user-password={{ item.password }}
+  when: 'item.user not in user_list.stdout'
+  loop: 
+    '{{ etcd_users_list}}' 
+
+- name: Assign users to roles 
+  ansible.builtin.command:
+    argv: 
+      - /usr/bin/podman
+      - exec
+      - -it
+      - etcd
+      - /usr/local/bin/etcdctl
+      - --cacert={{ etcd_users_cacert_file }} 
+      - --endpoints=https://{{ etcd_user_endpoint_ip }}:2379
+      - user 
+      - grant-role
+      - '{{item.user}}' 
+      - '{{item.role}}'
+  loop: 
+    '{{ etcd_users_list}}' 
