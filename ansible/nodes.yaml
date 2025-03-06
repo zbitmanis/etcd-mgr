@@ -1,0 +1,34 @@
+---
+- name: 'Prepare nodes for feature managment'
+  hosts: all
+  become: true
+  roles:
+   - prepare_node
+  tags:
+    - 'prepare'
+
+- name:  'Manage CA, certificates CA bundle'
+  hosts: ca,mon,etcd
+  become: true
+  gather_facts: no
+  roles:
+   - certs
+  tags:
+    - 'certs'
+
+- name: 'Setup  etcd daemon'
+  hosts:  etcd
+  become: true
+  roles:
+   - etcd
+  tags:
+    - 'etcd'
+
+- name: 'Setup monitoring'
+  hosts:  mon
+  become: true
+  roles:
+   - monitoring
+  tags:
+    - 'monitoring'
+

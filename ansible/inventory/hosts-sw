@@ -1,0 +1,18 @@
+[ca]
+ca-a    ansible_host=ec2-3-67-132-242.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+[mon]
+mon-a   ansible_host=ec2-18-153-62-35.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+
+[etcd]
+etcd-node-a ansible_host=ec2-3-71-185-0.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+etcd-node-b ansible_host=ec2-3-64-8-66.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+etcd-node-c ansible_host=ec2-3-69-232-155.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+
+[sw]
+ca-a    ansible_host=ec2-3-67-132-242.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+mon-a   ansible_host=ec2-18-153-62-35.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+etcd-node-a ansible_host=ec2-3-71-185-0.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+etcd-node-b ansible_host=ec2-3-64-8-66.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+etcd-node-c ansible_host=ec2-3-69-232-155.eu-central-1.compute.amazonaws.com etcd_mgr_env=sw
+
+
