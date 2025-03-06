@@ -1,0 +1,9 @@
+---
+- name: 'Gather node inormation'
+  hosts: all 
+  become: true
+  roles:
+   - node_info
+  tags:
+    - 'info'
+
