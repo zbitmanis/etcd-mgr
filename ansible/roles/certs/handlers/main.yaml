@@ -1,0 +1,19 @@
+- name: Store etcd csr
+  ansible.builtin.copy:
+    dest: '{{ certs_etcd_csr_file }}'
+    content: "{{ csr.csr }}"
+
+- name: Store ca csr
+  ansible.builtin.copy:
+    dest: '{{ certs_etcd_csr_file }}'
+    content: "{{ ca_root_csr.csr }}"
+
+- name: Store etcd client csr
+  ansible.builtin.copy:
+    dest: '{{ item.item.path | default(certs_etcd_client_certificate_path) }}/{{ item.item.name }}.csr'
+    content: "{{ item.csr }}"
+    owner: '{{ item.item.owner | default(certs_etcd_client_owner) }}' 
+    group: '{{ item.item.group | default(certs_etcd_client_group) }}' 
+  no_log: true
+  loop:
+    '{{ client_csr.results }}'    

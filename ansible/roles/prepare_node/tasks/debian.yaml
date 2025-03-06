@@ -1,0 +1,13 @@
+---
+- name: 'Install repository managment tools'
+  apt: 
+    name: 'software-properties-common'
+    state: present
+    update_cache: true
+
+- name: 'Install useful packages'
+  package: 
+    name: '{{ item.name }}'  
+    state: present
+  loop: '{{ prepare_node_debian_packages }}'
+

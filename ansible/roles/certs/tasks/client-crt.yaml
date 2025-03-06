@@ -1,0 +1,66 @@
+---
+- name: Create a directory to store the certificates 
+  ansible.builtin.file:
+    path: '{{ certs_etcd_client_certificate_path }}'
+    state: directory
+    mode: '0700'
+
+- name: Create private key for new certificate on {{ inventory_hostname }}
+  community.crypto.openssl_privatekey:
+    path: '{{ item.path | default(certs_etcd_client_certificate_path) }}/{{ item.name }}.key'
+    owner: '{{ item.owner | default(certs_etcd_client_owner) }}' 
+    group: '{{ item.group | default(certs_etcd_client_group) }}' 
+  loop:
+    '{{ certs_etcd_client_certs }}' 
+
+- name: Check CSR does not exists
+  ansible.builtin.stat:
+    path: '{{ item.path | default(certs_etcd_client_certificate_path) }}/{{ item.name }}.csr'
+  register: csr_client_stat
+  loop:
+    '{{ certs_etcd_client_certs }}' 
+
+- name: Create certificate signing request (CSR) for new certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path:  '{{ item.path | default(certs_etcd_client_certificate_path) }}/{{ item.name }}.key'
+    common_name: '{{ item.cname }}'
+    locality_name: '{{ certs_etcd_client_locality_name }}'
+    organization_name:  ' {{ certs_etcd_client_organization_name }}'
+    organizational_unit_name: ' {{ certs_etcd_client_organizational_unit_name }}'
+    subject_alt_name: '{{ item.sans | default(omit) }}'
+  register: client_csr
+  notify: Store etcd client csr
+  when: not csr_client_stat.results[loop_idx].stat.exists or certs_etcd_client_csr_forced
+  loop:
+    '{{ certs_etcd_client_certs }}'
+  loop_control:
+    index_var: loop_idx 
+
+- name: Sign certificate with our CA
+  community.crypto.x509_certificate_pipe:
+    csr_content: "{{ client_csr.results[loop_idx].csr }}"
+    provider: ownca
+    ownca_path: '{{ certs_ca_certificate_root_crt_file }}'  
+    ownca_privatekey_path: '{{ certs_ca_certificate_root_key_file }}'
+    ownca_privatekey_passphrase: "{{ certs_ca_root_key_passkey }}"
+    ownca_not_after: '{{ certs_etcd_client_ownca_not_after }}'
+    ownca_not_before: "-1d"  # valid since yesterday
+  delegate_to: '{{ certs_etcd_client_ca_server }}'
+  register: client_certificates
+  loop:
+    '{{ certs_etcd_client_certs }}'
+  loop_control:
+    index_var: loop_idx 
+  when: client_csr is changed
+
+- name: Write certificate file on {{ inventory_hostname }}
+  copy:
+    dest: '{{ item.path | default(certs_etcd_client_certificate_path) }}/{{ item.name }}.pem'
+    content: "{{ client_certificates.results[loop_idx].certificate }}"
+    owner: '{{ item.owner | default(certs_etcd_client_owner) }}' 
+    group: '{{ item.group | default(certs_etcd_client_group) }}' 
+  loop:
+    '{{ certs_etcd_client_certs }}'
+  loop_control:
+    index_var: loop_idx 
+  when: (not csr_client_stat.results[loop_idx].stat.exists or certs_etcd_client_csr_forced) and client_csr is changed

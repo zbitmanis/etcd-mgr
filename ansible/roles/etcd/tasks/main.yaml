@@ -1,0 +1,17 @@
+---
+- name: Gather the ip address of etcd interface
+  ansible.builtin.set_fact:
+    etcd_node_ip:  '{{ ansible_facts[etcd_node_iface].ipv4.address }}'
+
+- name: Deploy etcd systemd unit file 
+  ansible.builtin.template:
+    src: etcd.service.j2
+    dest: '{{ etcd_systemd_unit_file }}'
+    mode: '0644'
+  notify: Restart etcd service 
+
+- name: Ensure the podman service is running
+  ansible.builtin.systemd:
+    name: podman
+    state: started
+    enabled: true

@@ -1,0 +1,138 @@
+---
+certs_etcd_client_domain: '{{ etcd_mgr_env }}.{{ etcd_mgr_ext_domain_name }}' 
+nginx_ext_domain: '{{ etcd_mgr_env }}.{{ etcd_mgr_ext_domain_name }}' 
+monitoring_node_iface: '{{ etcd_mgr_node_iface }}'
+prometheus_scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets:
+          -  'localhost:9090'
+        labels:
+          app: "prometheus"
+  - job_name: "etcd"
+    scrape_interval: 30s
+    scheme: https
+    tls_config:
+      cert_file: /etc/prometheus/tls/scrape.pem
+      key_file: /etc/prometheus/tls/scrape.key
+      ca_file: /etc/prometheus/tls/etcd-ca-bundle.pem
+    static_configs:
+      - targets: '{{ monitoring_etcd_scrape_targets }}'
+prepare_node_system_groups:
+    - name: alertmanager
+      gid: 1089
+    - name: prometheus
+      gid: 1090
+    - name: grafana
+      gid: 1091
+prepare_node_system_users:
+  - name: alertmanager
+    group: alertmanager
+    uid: 1089
+    shell: /bin/nologin
+    home: /var/alertmanager
+  - name: prometheus
+    group: prometheus
+    uid: 1090
+    shell: /bin/nologin
+    home: /var/prometheus
+    create_home: false
+  - name: grafana
+    group: grafana
+    uid: 1091
+    shell: /bin/nologin
+    home: /var/grafana
+    create_home: false
+prepare_node_system_folders:
+  - path: /etc/alertmanager
+    mode: '0755'
+    user: alertmanager
+    group: alertmanager
+  - path: /var/lib/alertmanager
+    mode: '0750'
+    user: alertmanager
+    group: alertmanager
+  - path: /var/log/alertmanager
+    mode: '0755'
+    user: alertmanager
+    group: alertmanager
+  - path: /etc/prometheus
+    mode: '0755'
+    user: prometheus
+    group: prometheus
+  - path: /etc/prometheus/tls
+    mode: '0750'
+    user: prometheus
+    group: prometheus
+  - path: /var/prometheus
+    mode: '0750'
+    user: prometheus
+    group: prometheus
+  - path: /var/prometheus/data
+    mode: '0750'
+    user: prometheus
+    group: prometheus
+  - path: /etc/grafana
+    mode: '0755'
+    user: grafana
+    group: grafana
+  - path: /etc/grafana/provisioning
+    mode: '0755'
+    user: grafana
+    group: grafana
+  - path: /etc/grafana/provisioning/datasources
+    mode: '0755'
+    user: grafana
+    group: grafana
+  - path: /etc/grafana/provisioning/dashboards
+    mode: '0755'
+    user: grafana
+    group: grafana
+  - path: /var/lib/grafana
+    mode: '0750'
+    user: grafana
+    group: grafana
+  - path: /var/lib/grafana/dashboards
+    mode: '0750'
+    user: grafana
+    group: grafana
+  - path: /var/log/grafana
+    mode: '0755'
+    user: grafana
+    group: grafana
+  - path: /etc/nginx/tls
+    mode: '0750'
+    user: root
+    group: root
+  - path: /etc/nginx/tls
+    mode: '0750'
+    user: root
+    group: root
+
+certs_etcd_client_certs:
+  - name: scrape
+    cname: scrape
+    path: /etc/prometheus/tls
+    group: prometheus
+    owner: prometheus
+  - name: grafana
+    cname: grafana.{{ certs_etcd_client_domain }}
+    sans:
+      - DNS:grafana.{{ certs_etcd_client_domain }} 
+    path: /etc/nginx/tls/
+    owner: root
+    group: root
+  - name: prometheus
+    cname: prometheus.{{ certs_etcd_client_domain }} 
+    path: /etc/nginx/tls/
+    sans:
+      - DNS:prometheus.{{ certs_etcd_client_domain }} 
+    owner: root
+    group: root
+  - name: alertmanager
+    cname: alertmanager.{{ certs_etcd_client_domain }} 
+    path: /etc/nginx/tls/
+    sans:
+      - DNS:prometheus.{{ certs_etcd_client_domain }} 
+    owner: root
+    group: root
